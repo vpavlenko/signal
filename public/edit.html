@@ -49,12 +49,18 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/service-worker.js", {
-          scope: "/edit",
-        })
-        .then(() => console.log("service worker loaded successfully"))
-        .catch((e) => console.error(e))
+      // Get all registered service workers
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          // Unregister each service worker
+          registration
+            .unregister()
+            .then(() => console.log("Service worker unregistered"))
+            .catch((e) =>
+              console.error("Failed to unregister service worker:", e)
+            )
+        }
+      })
     }
   </script>
   <meta name="apple-mobile-web-app-capable" content="yes" />
