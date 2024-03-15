@@ -9,6 +9,7 @@ import { IRect } from "../../../../../common/geometry"
 export interface INoteData {
   velocity: number
   isSelected: boolean
+  noteColor: number[]
 }
 
 class Float32Data {
@@ -26,12 +27,17 @@ class Float32Data {
 
 export class NoteBuffer
   implements
-    InstancedBuffer<(IRect & INoteData)[], "position" | "bounds" | "state">
+    InstancedBuffer<
+      (IRect & INoteData)[],
+      "position" | "bounds" | "state" | "color"
+    >
 {
   private _instanceCount: number = 0
 
   constructor(
-    readonly vertexArray: VertexArray<"position" | "bounds" | "state">,
+    readonly vertexArray: VertexArray<
+      "position" | "bounds" | "state" | "color"
+    >,
   ) {
     this.vertexArray.updateBuffer(
       "position",
@@ -42,6 +48,7 @@ export class NoteBuffer
   update(rects: (IRect & INoteData)[]) {
     const boundsData = new Float32Data(rects.length * 4)
     const stateData = new Float32Data(rects.length * 2)
+    const colorData = new Float32Data(rects.length * 4)
 
     for (let i = 0; i < rects.length; i++) {
       const rect = rects[i]
@@ -52,10 +59,14 @@ export class NoteBuffer
 
       stateData.push(rect.velocity / 127)
       stateData.push(rect.isSelected ? 1 : 0)
+      for (let i = 0; i < rect.noteColor.length; ++i) {
+        colorData.push(rect.noteColor[i])
+      }
     }
 
     this.vertexArray.updateBuffer("bounds", boundsData.data)
     this.vertexArray.updateBuffer("state", stateData.data)
+    this.vertexArray.updateBuffer("color", colorData.data)
 
     this._instanceCount = rects.length
   }
@@ -80,10 +91,12 @@ export const NoteShader = (gl: WebGL2RenderingContext) =>
       in vec4 position;
       in vec4 bounds;  // [x, y, width, height]
       in vec2 state; // [velocity, isSelected]
+      in vec4 noteColor;
 
       out vec4 vBounds;
       out vec2 vPosition;
       out vec2 vState;
+      out vec4 vNoteColor;
 
       void main() {
         vec4 transformedPosition = vec4((position.xy * bounds.zw + bounds.xy), position.zw);
@@ -91,6 +104,7 @@ export const NoteShader = (gl: WebGL2RenderingContext) =>
         vBounds = bounds;
         vPosition = transformedPosition.xy;
         vState = state;
+        vNoteColor = noteColor;
       }
     `,
     `#version 300 es
@@ -104,6 +118,7 @@ export const NoteShader = (gl: WebGL2RenderingContext) =>
       in vec4 vBounds;
       in vec2 vPosition;
       in vec2 vState;
+      in vec4 vNoteColor;
 
       out vec4 outColor;
 
@@ -118,7 +133,8 @@ export const NoteShader = (gl: WebGL2RenderingContext) =>
         } else {
           // if selected, draw selected color
           // otherwise, draw color based on velocity by mixing active and inactive color
-          outColor = mix(mix(inactiveColor, activeColor, vState.x), selectedColor, vState.y);
+          // outColor = mix(mix(inactiveColor, activeColor, vState.x), selectedColor, vState.y);
+          outColor = vNoteColor;
         }
       }
     `,
@@ -126,6 +142,7 @@ export const NoteShader = (gl: WebGL2RenderingContext) =>
       position: { size: 2, type: gl.FLOAT },
       bounds: { size: 4, type: gl.FLOAT, divisor: 1 },
       state: { size: 2, type: gl.FLOAT, divisor: 1 },
+      color: { size: 4, type: gl.FLOAT, divisor: 1 },
     },
     {
       projectionMatrix: { type: "mat4" },
