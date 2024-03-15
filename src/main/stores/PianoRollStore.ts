@@ -17,8 +17,16 @@ import Track, { TrackEvent, isNoteEvent } from "../../common/track"
 import { NoteCoordTransform } from "../../common/transform"
 import { Layout } from "../Constants"
 import { InstrumentSetting } from "../components/InstrumentBrowser/InstrumentBrowser"
+import { PITCH_TO_COLOR_MAPPING } from "../components/PianoRoll/PianoKeys"
 import RootStore from "./RootStore"
 import { RulerStore } from "./RulerStore"
+
+function hexToVec4(hex: string): number[] {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  return [r, g, b, 1] // Alpha is set to 1 for full opacity
+}
 
 export type PianoRollMouseMode = "pencil" | "selection"
 
@@ -26,6 +34,8 @@ export type PianoNoteItem = IRect & {
   id: number
   velocity: number
   isSelected: boolean
+  noteNumber: number
+  noteColor: number[]
 }
 
 export type SerializedPianoRollStore = Pick<
@@ -271,10 +281,14 @@ export default class PianoRollStore {
         ? transform.getDrumRect(e)
         : transform.getRect(e)
       const isSelected = selectedNoteIds.includes(e.id)
+      const { noteNumber, velocity } = e
+      const noteColor = hexToVec4(PITCH_TO_COLOR_MAPPING[noteNumber % 12])
       return {
         ...rect,
         id: e.id,
-        velocity: e.velocity,
+        velocity,
+        noteNumber,
+        noteColor,
         isSelected,
       }
     })

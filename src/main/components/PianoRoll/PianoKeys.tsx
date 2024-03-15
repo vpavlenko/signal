@@ -11,6 +11,21 @@ import { useStores } from "../../hooks/useStores"
 import { useTheme } from "../../hooks/useTheme"
 import DrawCanvas from "../DrawCanvas"
 
+export const PITCH_TO_COLOR_MAPPING = [
+  "#ff0000",
+  "#820000",
+  "#ff89be",
+  "#fffd37",
+  "#00ff59",
+  "#00d5ff",
+  "#808080",
+  "#0c0cfc",
+  "#fe6412",
+  "#007000",
+  "#925601",
+  "#a000ff",
+]
+
 function drawBorder(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -83,22 +98,6 @@ function drawKeys(
   theme: Theme,
   touchingKeys: number[],
 ) {
-  // Pitch-to-color mapping array
-  const pitchToColorMapping = [
-    "#ff0000",
-    "#820000",
-    "#ff89be",
-    "#fffd37",
-    "#00ff59",
-    "#00d5ff",
-    "#808080",
-    "#0c0cfc",
-    "#fe6412",
-    "#007000",
-    "#925601",
-    "#a000ff",
-  ]
-
   const colors = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0] // Key color pattern (0: white, 1: black)
   const blackKeyWidth = width * 0.64
   const blackKeyFillStyle = makeBlackKeyFillStyle(ctx, blackKeyWidth) // Original black key gradient
@@ -110,7 +109,7 @@ function drawKeys(
     ctx.save()
     ctx.translate(0, y)
 
-    const keyColor = pitchToColorMapping[i % 12] // Select color based on pitch
+    const keyColor = PITCH_TO_COLOR_MAPPING[i % 12] // Select color based on pitch
     if (isBlack) {
       // Black key: use original gradient fill and optionally add pitch color overlay/border
       drawBlackKey(
